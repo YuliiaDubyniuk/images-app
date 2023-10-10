@@ -7,7 +7,7 @@ export const Modal = ({largeImg, onClose}) => {
     return () => {
       window.removeEventListener('keydown', handleEsc);
     };
-  }, []);
+  });
 
  const handleEsc = evt => {
     if (evt.code === 'Escape') {
