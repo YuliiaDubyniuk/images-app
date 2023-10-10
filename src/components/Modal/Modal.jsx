@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Overlay } from './Modal.styled';
 
-export const Modal = () => {
+export const Modal = ({largeImg, onClose}) => {
   useEffect(() => {
     window.addEventListener('keydown', handleEsc);
     return () => {
@@ -9,13 +9,13 @@ export const Modal = () => {
     };
   }, []);
 
-  handleEsc = evt => {
+ const handleEsc = evt => {
     if (evt.code === 'Escape') {
       onClose();
     }
   };
 
-  handleBackdropClick = evt => {
+  const handleBackdropClick = evt => {
     if (evt.currentTarget === evt.target) {
       onClose();
     }
