@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
@@ -8,95 +8,84 @@ import { Modal } from './Modal/Modal';
 import { fetchPictures } from '../api/api';
 import { StyledApp } from './App.styled';
 
-export class App extends Component {
-  state = {
-    images: [],
-    page: 1,
-    imgPerPage: 12,
-    inputValue: '',
-    modalImg: '',
-    
-    isLoading: false,
-    showMoreBtn: false,
-    showModal: false,
+export const App = () => {
 
-    error: null,
-  };
+const [gallery, setGallery] = useState([]);
+const [page, setPage] = useState(1);
+const [inputValue, setInputValue] = useState('');
+const [modalImg, setModalImg] = useState('');
 
-  async componentDidUpdate(_, prevState) {
-    const { inputValue, page, imgPerPage, images} = this.state;
+const [isLoading, setIsLoading] = useState(false);
+const [showMoreBtn, setShowMoreBtn] = useState(false);
+const [showModal, setShowModal] = useState(false);
 
-    if (inputValue !== prevState.inputValue || page !== prevState.page) {
+const [error, setError] = useState(null);
+const imgPerPage = 12;
+  
+  useEffect(() => {
+    if (inputValue === '') return;
+    async function getImages() {
       try {
-        this.setState({ isLoading: true });
+        setIsLoading(true);
         const { data } = await fetchPictures(inputValue, page);
         if (data.hits.length) {
-          this.setState({
-            images: [...images, ...data.hits],
-          })
+          setGallery(prevGallery => [...prevGallery, ...data.hits])
         } else {
           Notify.info('Sorry, there are no images on your request. Try again.');
-        }
-
+        };
         if (data.total > imgPerPage * page) {
-          this.setState({ showMoreBtn: true });
+          setShowMoreBtn(true);
         } else {
-          this.setState({ showMoreBtn: false });
-        }
+          setShowMoreBtn(false);
+        };
       } catch (error) {
-        this.setState({ error: error.message });
+        setError(error.message);
       } finally {
-        this.setState({ isLoading: false });
+        setIsLoading(false);
       }
     }
-  }
+      getImages();
+  }, [inputValue, page]);
 
-  onSubmit = evt => {
+  const onSubmit = evt => {
     evt.preventDefault();
     const searchWord = evt.currentTarget.searchInput.value;
     if (searchWord.trim() === '') {
       Notify.warning('Please, enter your search word!');
     }
-    this.setState({
-      page: 1,
-      images: [],
-      isLoading: false,
-      inputValue: searchWord,
-    });
+    setPage(1);
+    setGallery([]);
+    setIsLoading(false);
+    setInputValue(searchWord);
+
     evt.currentTarget.reset();
   };
 
-  onloadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const onloadMore = () => {
+    setPage(prevPage => prevPage + 1);
+  }
+
+  const onImgClick = (evt) => {
+    setShowModal(true);
+    setModalImg(evt.target.dataset.largeimg);
   };
 
-  onImgClick = (evt) => {
-    this.setState({
-      showModal: true,
-      modalImg: evt.target.dataset.largeimg,
-    })
-  };
-
-  onCloseModal = () => {
-    this.setState({ showModal: false });
-  };
-
-
-  render() {
-    const { isLoading, error, images, showModal, modalImg} = this.state;
+  const onCloseModal = () => {
+    setShowModal(false);
+};
+  
     return (
       <StyledApp>
-        <Searchbar handleSubmit={this.onSubmit} />
+        <Searchbar handleSubmit={onSubmit} />
         {isLoading && <Loader />}
         {error && 
           <p className="error">
             Oops! Something does wrong. Reload your page or try again later.
           </p>
         }
-        <ImageGallery images={images} onImgClick={this.onImgClick}/>
-        {this.state.showMoreBtn && <Button onLoadMore={this.onloadMore} />}
-        {showModal && <Modal largeImg={modalImg} onClose={this.onCloseModal} />}
+        <ImageGallery images={gallery} onImgClick={onImgClick}/>
+        {showMoreBtn && <Button onLoadMore={onloadMore} />}
+        {showModal && <Modal largeImg={modalImg} onClose={onCloseModal} />}
       </StyledApp>
     );
   }
-}
